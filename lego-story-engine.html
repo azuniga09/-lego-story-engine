@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LEGO Story Engine – BeCreatrix</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem; }
+  .app { background: white; border-radius: 16px; padding: 2rem; max-width: 600px; width: 100%; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+  .header { text-align: center; margin-bottom: 2rem; }
+  .header h1 { font-size: 26px; color: #3C3489; margin-bottom: 6px; }
+  .header p { color: #666; font-size: 15px; }
+  .step { display: none; }
+  .step.active { display: block; }
+  .progress { display: flex; gap: 8px; justify-content: center; margin-bottom: 1.5rem; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; transition: background 0.3s; }
+  .dot.done { background: #7F77DD; }
+  label { font-size: 13px; color: #555; display: block; margin-bottom: 6px; }
+  input[type=text] { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 1.25rem; }
+  .upload-zone { border: 2px dashed #AFA9EC; border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; background: #EEEDFE; transition: background 0.2s; }
+  .upload-zone:hover { background: #CECBF6; }
+  .upload-zone p { color: #534AB7; font-size: 14px; margin-top: 8px; }
+  .upload-icon { font-size: 36px; }
+  #file-input { display: none; }
+  #preview-img { width: 100%; max-height: 260px; object-fit: contain; border-radius: 10px; margin-top: 1rem; display: none; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 11px 22px; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; border: none; transition: background 0.2s; }
+  .btn-primary { background: #7F77DD; color: white; font-weight: 600; }
+  .btn-primary:hover { background: #534AB7; }
+  .btn-secondary { background: #eee; color: #333; }
+  .btn-secondary:hover { background: #ddd; }
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; }
+  .loading-wrap { text-align: center; padding: 2rem 0; }
+  .loading-bar { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; margin: 1rem 0; }
+  .loading-bar-inner { height: 100%; width: 0; background: #7F77DD; border-radius: 3px; transition: width 0.5s ease; }
+  .loading-msg { color: #666; font-size: 14px; }
+  .spinner-big { font-size: 40px; animation: spin 1.2s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .question-block { background: #EEEDFE; border-left: 4px solid #7F77DD; border-radius: 0 10px 10px 0; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .question-block strong { display: block; color: #3C3489; font-size: 15px; margin-bottom: 8px; }
+  textarea { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 70px; }
+  .error { color: #c0392b; font-size: 13px; margin-top: 8px; display: none; }
+  .badge { display: inline-block; background: #EEEDFE; color: #3C3489; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; margin-bottom: 1rem; }
+  .ficha { border: 1.5px solid #AFA9EC; border-radius: 14px; padding: 1.5rem; }
+  .ficha img { width: 100%; max-height: 220px; object-fit: contain; border-radius: 10px; margin-bottom: 1rem; display: none; }
+  .ficha h2 { font-size: 22px; color: #3C3489; margin-bottom: 4px; }
+  .ficha .inventor { font-size: 13px; color: #888; margin-bottom: 1.25rem; }
+  .ficha-section { margin-bottom: 1rem; }
+  .ficha-section .sec-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #999; margin-bottom: 4px; }
+  .ficha-section .sec-val { font-size: 14px; color: #333; line-height: 1.6; }
+  @media print {
+    body { background: white; padding: 0; }
+    .app { box-shadow: none; }
+    .btn-row { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>🧱 LEGO Story Engine</h1>
+    <p>Convierte tu modelo en una idea innovadora</p>
+  </div>
+
+  <div class="progress">
+    <div class="dot done" id="dot-0"></div>
+    <div class="dot" id="dot-1"></div>
+    <div class="dot" id="dot-2"></div>
+    <div class="dot" id="dot-3"></div>
+  </div>
+
+  <div class="step active" id="step-0">
+    <label>¿Cuál es tu nombre, inventor?</label>
+    <input type="text" id="nombre" placeholder="Escribe tu nombre..." />
+    <label>Sube una foto de tu modelo LEGO</label>
+    <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">📷</div>
+      <p>Haz clic para subir una foto</p>
+    </div>
+    <input type="file" id="file-input" accept="image/*" />
+    <img id="preview-img" alt="Vista previa del modelo LEGO" />
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goStep1()">Siguiente →</button>
+    </div>
+    <p class="error" id="error-0">Por favor escribe tu nombre y sube una foto.</p>
+  </div>
+
+  <div class="step" id="step-1">
+    <div class="loading-wrap">
+      <div class="spinner-big">🔍</div>
+      <div class="loading-bar"><div class="loading-bar-inner" id="loading-bar"></div></div>
+      <p class="loading-msg" id="loading-msg">La IA está observando tu modelo LEGO...</p>
+    </div>
+  </div>
+
+  <div class="step" id="step-2">
+    <p style="font-size:14px; color:#666; margin-bottom:1rem;">Responde estas 3 preguntas sobre tu invento:</p>
+    <div id="questions-container"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generarFicha()" id="btn-ficha">Generar mi ficha ✨</button>
+    </div>
+    <p class="error" id="error-2">Por favor responde todas las preguntas.</p>
+  </div>
+
+  <div class="step" id="step-3">
+    <div class="badge">🏆 ¡Tu ficha de innovador está lista!</div>
+    <div class="ficha">
+      <img id="ficha-img" alt="Tu modelo LEGO" />
+      <h2 id="ficha-titulo"></h2>
+      <p class="inventor" id="ficha-inventor"></p>
+      <div class="ficha-section">
+        <div class="sec-label">Qué es</div>
+        <div class="sec-val" id="ficha-descripcion"></div>
+      </div>
+      <div class="ficha-section">
+        <div class="sec-label">Historia</div>
+        <div class="sec-val" id="ficha-historia"></div>
+      </div>
+      <div class="ficha-section">
+        <div class="sec-label">Superpoder de la invención</div>
+        <div class="sec-val" id="ficha-superpoder"></div>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:1rem;">
+      <button class="btn btn-secondary" onclick="reiniciar()">↺ Nueva invención</button>
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir ficha</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const ANALIZAR_URL = 'https://analizarlego-gqkclt4iyq-uc.a.run.app';
+  const FICHA_URL = 'https://generarficha-gqkclt4iyq-uc.a.run.app';
+  let imgBase64 = null, imgMime = null, questions = null;
+
+  document.getElementById('file-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    imgMime = file.type;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      imgBase64 = ev.target.result.split(',')[1];
+      const img = document.getElementById('preview-img');
+      img.src = ev.target.result;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function setStep(n) {
+    document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i === n));
+    for (let i = 0; i <= 3; i++) document.getElementById('dot-' + i).classList.toggle('done', i <= n);
+  }
+
+  async function goStep1() {
+    const nombre = document.getElementById('nombre').value.trim();
+    if (!nombre || !imgBase64) { document.getElementById('error-0').style.display = 'block'; return; }
+    document.getElementById('error-0').style.display = 'none';
+    setStep(1);
+    animateLoading();
+    try {
+      const res = await fetch(ANALIZAR_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({imgBase64, imgMime})
+      });
+      questions = await res.json();
+      clearInterval(window._loadInterval);
+      document.getElementById('loading-bar').style.width = '100%';
+      renderPreguntas(questions);
+      setTimeout(() => setStep(2), 400);
+    } catch(err) {
+      document.getElementById('loading-msg').textContent = 'Error al analizar la foto. Intenta de nuevo.';
+    }
+  }
+
+  function animateLoading() {
+    let w = 0;
+    const msgs = ['La IA está observando tu modelo LEGO...', 'Detectando piezas e ideas...', 'Pensando preguntas especiales para ti...'];
+    let mi = 0;
+    window._loadInterval = setInterval(() => {
+      w = Math.min(w + 2, 88);
+      document.getElementById('loading-bar').style.width = w + '%';
+      if (w % 30 === 0 && mi < msgs.length) document.getElementById('loading-msg').textContent = msgs[mi++];
+    }, 100);
+  }
+
+  function renderPreguntas(q) {
+    const c = document.getElementById('questions-container');
+    c.innerHTML = q.preguntas.map((p, i) => `
+      <div class="question-block">
+        <strong>${p}</strong>
+        <textarea id="resp-${i}" placeholder="Escribe tu respuesta aquí..." rows="3"></textarea>
+      </div>
+    `).join('');
+  }
+
+  async function generarFicha() {
+    const resps = questions.preguntas.map((_, i) => document.getElementById('resp-' + i)?.value.trim() || '');
+    if (resps.some(r => !r)) { document.getElementById('error-2').style.display = 'block'; return; }
+    document.getElementById('error-2').style.display = 'none';
+    document.getElementById('btn-ficha').textContent = 'Generando... ⏳';
+    document.getElementById('btn-ficha').disabled = true;
+    try {
+      const res = await fetch(FICHA_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({titulo: questions.titulo, descripcion: questions.descripcion, preguntas: questions.preguntas, respuestas: resps})
+      });
+      const ficha = await res.json();
+      const nombre = document.getElementById('nombre').value.trim();
+      document.getElementById('ficha-titulo').textContent = ficha.titulo;
+      document.getElementById('ficha-inventor').textContent = 'Inventor: ' + nombre + ' · BeCreatrix León';
+      document.getElementById('ficha-descripcion').textContent = questions.descripcion;
+      document.getElementById('ficha-historia').textContent = ficha.historia;
+      document.getElementById('ficha-superpoder').textContent = ficha.superpoder;
+      const fichaImg = document.getElementById('ficha-img');
+      const previewSrc = document.getElementById('preview-img').src;
+      if (previewSrc) { fichaImg.src = previewSrc; fichaImg.style.display = 'block'; }
+      setStep(3);
+    } catch(err) {
+      document.getElementById('btn-ficha').textContent = 'Generar mi ficha ✨';
+      document.getElementById('btn-ficha').disabled = false;
+      document.getElementById('error-2').textContent = 'Error al generar la ficha. Intenta de nuevo.';
+      document.getElementById('error-2').style.display = 'block';
+    }
+  }
+
+  function reiniciar() {
+    imgBase64 = null; imgMime = null; questions = null;
+    document.getElementById('nombre').value = '';
+    document.getElementById('preview-img').style.display = 'none';
+    document.getElementById('preview-img').src = '';
+    document.getElementById('file-input').value = '';
+    document.getElementById('questions-container').innerHTML = '';
+    document.getElementById('btn-ficha').textContent = 'Generar mi ficha ✨';
+    document.getElementById('btn-ficha').disabled = false;
+    setStep(0);
+  }
+</script>
+</body>
+</html>
